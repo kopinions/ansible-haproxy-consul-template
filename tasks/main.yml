@@ -1,0 +1,9 @@
+---
+
+- name: mkdir ctmpls
+  file: path=/etc/haproxy/ctmpl state=directory
+
+- name: copy ctmpls
+  copy: src={{item}} dest=/etc/haproxy/ctmpl/{{item| regex_replace('^.*/ansible-haproxy-consul-template\/files/(.*\.cfg.ctmpl)$', '\\1')}} force=yes
+  with_fileglob:
+    - ./*
