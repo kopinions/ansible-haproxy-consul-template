@@ -11,3 +11,9 @@
 - name: add consul template config
   template: src=haproxy.cfg.j2 dest=/opt/consul-template/config.d/haproxy.cfg
   notify: restart consul-template
+
+- name: flush handlers to apply config changes
+  meta: flush_handlers
+
+- name: ensure consul-template is running
+  service: name=consul-template state=started
