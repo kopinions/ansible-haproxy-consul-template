@@ -7,3 +7,7 @@
   copy: src={{item}} dest=/etc/haproxy/ctmpl/{{item| regex_replace('^.*/ansible-haproxy-consul-template\/files/(.*\.cfg.ctmpl)$', '\\1')}} force=yes
   with_fileglob:
     - ./*
+
+- name: add consul template config
+  template: src=haproxy.cfg.j2 dest=/opt/consul-template/config.d/haproxy.cfg
+  notify: restart consul-template
