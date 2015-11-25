@@ -20,7 +20,7 @@ defaults
 {{end}}
 
 {{ range $service := services}}
-{{ if in ("mesos,consul"|split ",") $service.Name  }}
+{{ if not (in ("mesos,consul"|split ",") $service.Name) }}
 {{ else }}
 {{ range .Tags }}
 listen {{ $service.Name }}_{{ . }}
@@ -39,8 +39,7 @@ listen {{ $service.Name }} {{ range service $service.Name }}
     mode tcp
     option tcplog
     balance leastconn
-    server {{ .Node }} {{ .Address }}:{{ .Port }}
-    {{ end }}
+    server {{ .Node }} {{ .Address }}:{{ .Port }} {{ end }}
 {{ end }}
 {{ end }}
 {{ end }}
