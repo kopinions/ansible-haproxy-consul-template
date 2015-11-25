@@ -1,24 +1,46 @@
 global
+    daemon
+    log 127.0.0.1 local0
+    log 127.0.0.1 local1 notice
     maxconn {{or (key "service/haproxy/maxconn") 256}}
+    maxconn 4096
+    user root
+    group root
+
     debug
 
 defaults
-    mode http
-    timeout connect {{or (key "service/haproxy/timeouts/connect") "5000ms"}}
-    timeout client {{or (key "service/haproxy/timeouts/client") "50000ms"}}
-    timeout server {{or (key "service/haproxy/timeouts/server") "50000ms"}}
+    log         global
+{{range ls "service/haproxy/timeouts"}}
+    timeout {{.Key}} {{.Value}}
+{{else}}
+    timeout connect 5000ms
+    timeout client 50000ms
+    timeout server 50000ms
+{{end}}
 
-frontend www
-    bind *:80
-
-    # Generated automatically by consul-template
-{{ range services }}
-    acl host_{{ .Name }} hdr(host) -i {{ .Name }}.{{ or (env "HAPROXY_DOMAIN") "haproxy.service.consul" }}
-    use_backend {{ .Name }}_backend if host_{{ .Name }}
+{{ range $service := services}}
+{{ if in ("mesos,consul"|split ",") $service.Name  }}
+{{ else }}
+{{ range .Tags }}
+listen {{ $service.Name }}_{{ . }}
+    {{ with $service_tag := printf "%s.%s" . $service.Name }}
+    {{ range service $service_tag }}
+    bind 0.0.0.0:{{ .Port }}
+    mode tcp
+    option tcplog
+    balance leastconn
+    server {{ .Node }} {{ .Address }}:{{ .Port }}
+    {{ end }}
+    {{ end }}
+{{ else }}
+listen {{ $service.Name }} {{ range service $service.Name }}
+    bind 0.0.0.0:{{ .Port }}
+    mode tcp
+    option tcplog
+    balance leastconn
+    server {{ .Node }} {{ .Address }}:{{ .Port }}
+    {{ end }}
 {{ end }}
-
-{{ range services }}
-backend {{ .Name }}_backend
-{{ range service .Name }}
-   server {{ .Node }} {{ .Address }}:{{ .Port }}{{ end }}
+{{ end }}
 {{ end }}
